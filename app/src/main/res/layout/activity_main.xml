@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/home_background">
+
+<LinearLayout
+    android:id="@+id/activity_main"
+
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:animateLayoutChanges="true"
+    android:padding="20dp">
+
+    <Button
+        android:id="@+id/resetbutton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/reset_button_text"/>
+
+    <TextView
+        android:id="@+id/city_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/current_temperature"/>
+
+    <RelativeLayout
+        android:id="@+id/current_day"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        >
+
+        <TextView
+            android:id="@+id/temperature"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentLeft="true"
+            android:layout_centerVertical="true"
+            android:textSize="19sp"
+            tools:text="14 °C / 39 °F" />
+
+        <FrameLayout
+            android:id="@+id/sun_indicator_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="invisible"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true">
+            <ImageView
+                android:id="@+id/sun_indicator"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:src="@drawable/sunny_47314" />
+
+            <ImageView
+                android:id="@+id/cloud_indicator"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal|center_vertical"
+                android:src="@drawable/cloud" />
+        </FrameLayout>
+        <TextView
+            android:id="@+id/wind_speed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/sun_indicator_container"
+            android:layout_alignStart="@id/sun_indicator_container"
+            android:layout_alignLeft="@id/sun_indicator_container"
+            android:gravity="center_horizontal"
+            tools:text="w : 4 m/s"/>
+
+    </RelativeLayout>
+
+    <Button
+        android:id="@+id/fetch_5days_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/next5days"/>
+
+    <LinearLayout
+        android:id="@+id/next_5_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:animateLayoutChanges="true"
+        android:padding="20dp"/>
+
+
+    </LinearLayout>
+</ScrollView>

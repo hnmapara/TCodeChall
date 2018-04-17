@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Tweather</string>
+    <string name="current_temperature">Current temperature : %1$S </string>
+    <string name="temperature">%1$.2f °C / %2$.2f °F</string>
+    <string name="wind_speed">W : %1$.2f m/s</string>
+    <string name="standard_deviation">Standard Deviation : %1$.2f</string>
+
+    <string name="reset_button_text">RESET</string>
+    <string name="next5days">Next 5 Days</string>
+</resources>
