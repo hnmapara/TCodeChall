@@ -1,9 +1,14 @@
 package com.tcode.challenge.network;
 
+import android.arch.lifecycle.LiveData;
+import android.arch.lifecycle.MediatorLiveData;
+import android.arch.lifecycle.MutableLiveData;
+import android.arch.lifecycle.Observer;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.WorkerThread;
 import android.util.Log;
+import android.util.Pair;
 
 import com.tcode.challenge.WeatherModel;
 
@@ -45,14 +50,18 @@ public class WeatherClient {
     private static WeatherClient mInstance;
 
     private WeatherApiService mRetrofitService;
-    private WeatherModel todayWeather;
-    private Map<Integer, WeatherModel> next5DayWeatherMap;
+    private MutableLiveData<WeatherModel> todayWeatherLiveData;
+    private MutableLiveData<Map<Integer, WeatherModel>> next5DayWeatherMapLiveData;
+
+    private MediatorLiveData<String> mald = new MediatorLiveData<>();
 
     public interface IOnFinish {
         void onSuccess(boolean isSuccess);
     }
 
     private WeatherClient() {
+        todayWeatherLiveData = new MutableLiveData<>();
+        next5DayWeatherMapLiveData = new MutableLiveData<>();
 
         OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
         Retrofit restAdapter = new Retrofit.Builder()
@@ -64,6 +73,45 @@ public class WeatherClient {
         mRetrofitService = restAdapter.create(WeatherApiService.class);
     }
 
+    /**
+     * Zip live data and set mediator livedata only when all the data is available
+     * @param lv1
+     * @param lv2
+     * @return
+     */
+    LiveData<Pair<String, String>> zipLivedata(final LiveData<String> lv1, final LiveData<String> lv2) {
+        final MyMediatorLiveData mld =  new MyMediatorLiveData();
+        mld.addSource(lv1, new Observer<String>() {
+            @Override
+            public void onChanged(@Nullable String s) {
+                mld.val1 = s;
+                mld.update();
+            }
+        });
+        mld.addSource(lv2, new Observer<String>() {
+            @Override
+            public void onChanged(@Nullable String s) {
+                mld.val2 = s;
+                mld.update();
+            }
+        });
+
+        return mld;
+    }
+
+    static class MyMediatorLiveData extends MediatorLiveData<Pair<String, String>> {
+        String val1 = null;
+        String val2 = null;
+
+        void update() {
+            String localVal1 = val1;
+            String localVal2 = val2;
+            if (localVal1 != null && localVal2 != null) {
+                this.setValue(new Pair<>(localVal1, localVal2));
+            }
+        }
+    }
+
 
     public static synchronized WeatherClient getInstance() {
         if (mInstance == null) {
@@ -73,21 +121,22 @@ public class WeatherClient {
     }
 
     @Nullable
-    public WeatherModel getTodayWeather() {
-        return todayWeather;
+    public LiveData<WeatherModel> getTodayWeather() {
+        fetchAsyncWeatherToday();
+        return todayWeatherLiveData;
     }
 
     @Nullable
-    public Map<Integer, WeatherModel> getNext5DayWeatherMap() {
-        return next5DayWeatherMap;
+    public LiveData<Map<Integer, WeatherModel>> getNext5DayWeatherMap() {
+        return next5DayWeatherMapLiveData;
     }
 
     public void reset() {
-        todayWeather = null;
-        next5DayWeatherMap = null;
+        todayWeatherLiveData.setValue(null);
+        next5DayWeatherMapLiveData.setValue(null);
     }
 
-    public void fetchAsyncWeather5Days(@Nullable final IOnFinish listener) {
+    public void fetchAsyncWeather5Days() {
         // All five days call are executed in one single thread - not an ideal way to do.
         // A better way would be to use countdown latch and submit all five calls to threadpool executor
         // and latch.await on the caller background thread until all the five threads are finished or interrupted.
@@ -97,20 +146,20 @@ public class WeatherClient {
             @Override
             public void run() {
                 boolean success = true;
-                    next5DayWeatherMap = new TreeMap<>();
+                    Map<Integer, WeatherModel> next5DayWeatherMap = new TreeMap<>();
                     for (int i=1; i<=5; i++) {
                         Call<WeatherModel> call = mRetrofitService.getNthDayWeather(i);
-                        success = success && executeAndStore(call, i);
+                        success = success && executeAndStore( next5DayWeatherMap, call, i);
                     }                
-                    if (listener != null) {
-                        listener.onSuccess(success);
+                    if (success) {
+                        next5DayWeatherMapLiveData.postValue(next5DayWeatherMap);
                     }
             }
         });
     }
 
     @WorkerThread
-    private boolean executeAndStore(Call<WeatherModel> call, int day) {
+    private boolean executeAndStore(Map<Integer, WeatherModel> next5DayWeatherMap, Call<WeatherModel> call, int day) {
         try {
             Response<WeatherModel> response = call.execute();
             if (response.isSuccessful()) {
@@ -150,7 +199,7 @@ public class WeatherClient {
         });
     }
 
-    public void fetchAsyncWeatherToday(@Nullable final IOnFinish listener) {
+    public void fetchAsyncWeatherToday() {
         Log.d(TAG, "fetching today's weather");
         Call<WeatherModel> call = mRetrofitService.getTodaysWeather();
         call.enqueue(new Callback<WeatherModel>() {
@@ -158,10 +207,7 @@ public class WeatherClient {
             public void onResponse(Call<WeatherModel> call, Response<WeatherModel> response) {
                 if (response.isSuccessful()) {
                     Log.d(TAG, "onResponse :" + response.body().toString());
-                    todayWeather = response.body();
-                    if (listener != null) {
-                        listener.onSuccess(true);
-                    }
+                    todayWeatherLiveData.setValue(response.body());
                 } else {
                     Log.e(TAG, "onResponse " + response.message());
                 }
@@ -169,9 +215,6 @@ public class WeatherClient {
 
             @Override
             public void onFailure(Call<WeatherModel> call, Throwable t) {
-                if (listener != null) {
-                    listener.onSuccess(false);
-                }
                 Log.e(TAG, "onFailure", t);
             }
         });

@@ -33,53 +33,53 @@ public class Presenter {
     }
 
     public void showToday() {
-        WeatherModel today = WeatherClient.getInstance().getTodayWeather();
-        if (today != null) {
-            mPresenterImpl.showToday(today);
-            mPresenterImpl.showCloudiness(today.getClouds().getCloudinessInPercentage() > 50);
-
-        } else {
-            fetchToday();
-        }
+//        WeatherModel today = WeatherClient.getInstance().getTodayWeather();
+//        if (today != null) {
+//            mPresenterImpl.showToday(today);
+//            mPresenterImpl.showCloudiness(today.getClouds().getCloudinessInPercentage() > 50);
+//
+//        } else {
+//            fetchToday();
+//        }
     }
     private void fetchToday() {
-        WeatherClient.getInstance().fetchAsyncWeatherToday(new WeatherClient.IOnFinish() {
-            @Override
-            public void onSuccess(boolean isSuccess) {
-                WeatherModel today = WeatherClient.getInstance().getTodayWeather();;
-                if (mPresenterImpl != null) {
-                    mPresenterImpl.showToday(today);
-                    mPresenterImpl.showCloudiness(today.getClouds().getCloudinessInPercentage() > 50);
-                }
-            }
-        });
+//        WeatherClient.getInstance().fetchAsyncWeatherToday(new WeatherClient.IOnFinish() {
+//            @Override
+//            public void onSuccess(boolean isSuccess) {
+//                WeatherModel today = WeatherClient.getInstance().getTodayWeather();;
+//                if (mPresenterImpl != null) {
+//                    mPresenterImpl.showToday(today);
+//                    mPresenterImpl.showCloudiness(today.getClouds().getCloudinessInPercentage() > 50);
+//                }
+//            }
+//        });
     }
 
     public void showNext5days() {
-        Map<Integer, WeatherModel> dayToWeatherMap = WeatherClient.getInstance().getNext5DayWeatherMap();
-
-        if (dayToWeatherMap != null) {
-            showNext5Days(dayToWeatherMap.values());
-        }
+//        Map<Integer, WeatherModel> dayToWeatherMap = WeatherClient.getInstance().getNext5DayWeatherMap();
+//
+//        if (dayToWeatherMap != null) {
+//            showNext5Days(dayToWeatherMap.values());
+//        }
     }
 
     public void fetchNext5Days() {
-        WeatherClient.getInstance().fetchAsyncWeather5Days(new WeatherClient.IOnFinish() {
-            @Override
-            public void onSuccess(boolean isSuccess) {
-                if (isSuccess) {
-                    Map<Integer, WeatherModel> dayToWeatherMap = WeatherClient.getInstance().getNext5DayWeatherMap();
-                    showNext5Days(dayToWeatherMap.values());
-                } else {
-                    Log.e(TAG, "fetchNext5Days : error");
-                }
-            }
-        });
+//        WeatherClient.getInstance().fetchAsyncWeather5Days(new WeatherClient.IOnFinish() {
+//            @Override
+//            public void onSuccess(boolean isSuccess) {
+//                if (isSuccess) {
+//                    Map<Integer, WeatherModel> dayToWeatherMap = WeatherClient.getInstance().getNext5DayWeatherMap();
+//                    showNext5Days(dayToWeatherMap.values());
+//                } else {
+//                    Log.e(TAG, "fetchNext5Days : error");
+//                }
+//            }
+//        });
     }
 
     public void setContext(@Nullable MainActivity activity) {
         Log.d(TAG, "setContext" + activity);
-        mPresenterImpl = activity;
+        //mPresenterImpl = activity;
     }
 
     private void showNext5Days(@NonNull final Collection<WeatherModel> next5daysWeather) {

@@ -1,8 +1,13 @@
 package com.tcode.challenge.ui;
 
+import android.arch.lifecycle.LifecycleRegistryOwner;
+import android.arch.lifecycle.Observer;
+import android.arch.lifecycle.ViewModelProvider;
+import android.arch.lifecycle.ViewModelProviders;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -10,18 +15,19 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.tcode.challenge.presenter.Presenter;
 import com.tcode.challenge.R;
 import com.tcode.challenge.Utility;
 import com.tcode.challenge.WeatherModel;
 
 import java.text.DateFormatSymbols;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
-public class MainActivity extends AppCompatActivity implements Presenter.IPresenterImpl {
-    private Presenter mPresenter;
+public class MainActivity extends AppCompatActivity {
 
     private ViewGroup mNext5DayContainer;
     private TextView mCurrentTemperatureView;
@@ -29,18 +35,36 @@ public class MainActivity extends AppCompatActivity implements Presenter.IPresen
     private TextView mWindSpeed;
     private TextView mCityName;
     private ViewGroup mIndicatorGroup;
+    private MainActivityViewModel mViewModel;
 
     private static String[] sWeekdays = new DateFormatSymbols().getWeekdays();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-        mPresenter = new Presenter(this);
+        setContentView(R.layout.activity_main);
         initView();
-        mPresenter.showToday();
-        mPresenter.showNext5days();
+        mViewModel = ViewModelProviders.of(this).get(MainActivityViewModel.class);
+        mViewModel.getTodayWeatherLiveData().observe(this, new Observer<WeatherModel>() {
+            @Override
+            public void onChanged(@Nullable WeatherModel weatherModel) {
+                showToday(weatherModel);
+                showCloudiness(weatherModel.getClouds().getCloudinessInPercentage() > 50);
+            }
+        });
+
+        mViewModel.getNext5DayWeatherMapLiveData().observe(this, new Observer<Map<Integer, WeatherModel>>() {
+            @Override
+            public void onChanged(@Nullable Map<Integer, WeatherModel> integerWeatherModelMap) {
+                Collection<WeatherModel> next5daysWeather = integerWeatherModelMap.values();
+                List<Float> degrees = new ArrayList<>(next5daysWeather.size());
+                for(WeatherModel wm : next5daysWeather) {
+                    degrees.add(wm.getWeather().getTempInC());
+                }
+                showNext5DaysAndSD(next5daysWeather, Utility.calculateStandardDeviation(degrees));
+            }
+        });
     }
 
     private void initView() {
@@ -55,7 +79,7 @@ public class MainActivity extends AppCompatActivity implements Presenter.IPresen
 
             @Override
             public void onClick(View v) {
-                mPresenter.fetchNext5Days();
+                mViewModel.fetchNext5DaysAsync();
             }
         });
 
@@ -63,7 +87,7 @@ public class MainActivity extends AppCompatActivity implements Presenter.IPresen
 
             @Override
             public void onClick(View v) {
-                mPresenter.reset();
+                reset();
             }
         });
     }
@@ -81,7 +105,6 @@ public class MainActivity extends AppCompatActivity implements Presenter.IPresen
         return t;
     }
 
-    @Override
     public void showNext5DaysAndSD(@NonNull final Collection<WeatherModel> next5daysWeather, final double standarDeviation) {
         final Calendar calendar = Calendar.getInstance(Locale.getDefault());
         runOnUiThread(new Runnable() {
@@ -101,7 +124,6 @@ public class MainActivity extends AppCompatActivity implements Presenter.IPresen
         });
     }
 
-    @Override
     public void showToday(@NonNull WeatherModel currentWeather) {
         mIndicatorGroup.setVisibility(View.VISIBLE);
         mCityName.setText(getString(R.string.current_temperature, currentWeather.getName() ));
@@ -109,15 +131,13 @@ public class MainActivity extends AppCompatActivity implements Presenter.IPresen
         mWindSpeed.setText(getString(R.string.wind_speed, currentWeather.getWind().getSpeed()));
     }
 
-    @Override
     public void showCloudiness(boolean isVisible) {
         mCloudIndicator.setVisibility(isVisible ? View.VISIBLE : View.INVISIBLE);
     }
 
-    @Override
     public void reset() {
         mNext5DayContainer.removeAllViews();
         mIndicatorGroup.setVisibility(View.INVISIBLE);
-        mPresenter.showToday();
+        mViewModel.fetchTodayAsync();
     }
 }
